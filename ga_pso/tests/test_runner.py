@@ -5,7 +5,7 @@ import pytest
 
 import run_experiments as rx
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 P1 = {"file": "P1.csv", "trucks": 2, "trailers": 1, "ref": 189}
 
 

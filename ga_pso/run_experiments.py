@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+ROOT = HERE
 sys.path.insert(0, str(HERE))
 
 from ga import run_ga                       # noqa: E402

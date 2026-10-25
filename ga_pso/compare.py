@@ -11,7 +11,7 @@ import pandas as pd               # noqa: E402
 from scipy.stats import ranksums  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+ROOT = HERE
 sys.path.insert(0, str(HERE))
 from mcttrp.instance import load_instance              # noqa: E402
 from mcttrp.its_parse import load_its_result           # noqa: E402
@@ -19,7 +19,7 @@ from mcttrp.solution import Route, solution_cost, validate  # noqa: E402
 
 CFG = json.loads((ROOT / "config.json").read_text())
 RAW = ROOT / "results" / "raw"
-FIG = ROOT / "report" / "figures"
+FIG = ROOT / "results" / "figures"
 ALGS = ["ITS", "GA-OX", "GA-PMX", "PSO"]
 
 # paper Tables 4-5: (CW cost, ITS cost, ITS time in s)
@@ -263,7 +263,7 @@ def fig_routes(df, stem):
     _save(fig, f"routes_{short(stem)}")
 
 
-TAB = ROOT / "report" / "tables"
+TAB = ROOT / "results" / "tables"
 
 
 def _f(v, d=2):
