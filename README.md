@@ -2,7 +2,7 @@
 
 **Mata kuliah:** AI5103 Artificial Intelligence and Data Science Fundamental
 
-Proyek ini mempelajari persoalan rute truk dan trailer dengan kendaraan multi-kompartemen (*Multi-Compartment Truck and Trailer Routing Problem*, MC-TTRP). Folder ini berisi implementasi Genetic Algorithm (GA) dan Particle Swarm Optimization (PSO), beserta script eksperimen dan analisisnya. Hasilnya dibandingkan dengan metode paper, yaitu Clarke–Wright yang dilanjutkan Iterated Tabu Search (ITS).
+Proyek ini mempelajari persoalan rute truk dan trailer dengan kendaraan multi-kompartemen (*Multi-Compartment Truck and Trailer Routing Problem*, MC-TTRP). Repo ini berisi implementasi Genetic Algorithm (GA) dan Particle Swarm Optimization (PSO), beserta script eksperimen dan analisisnya. Hasilnya dibandingkan dengan metode paper, yaitu Clarke–Wright yang dilanjutkan Iterated Tabu Search (ITS).
 
 ## Anggota Kelompok
 
@@ -27,7 +27,7 @@ Sebuah koperasi di Spanyol mengirim pakan ternak memakai truk yang bisa menarik 
 - **PSO** (`pso.py`): posisi partikel berupa *random key* yang diurutkan menjadi permutasi, dengan bobot inersia yang turun linear.
 - Setiap solusi akhir diperiksa ulang oleh **validator** independen (`mcttrp/solution.py`), dan biayanya dihitung ulang. Validator yang sama juga dipakai untuk memeriksa solusi ITS.
 
-## Struktur folder
+## Struktur repo
 
 | Path | Isi |
 | --- | --- |
@@ -44,7 +44,7 @@ Sebuah koperasi di Spanyol mengirim pakan ternak memakai truk yang bisa menarik 
 
 ## Instalasi
 
-Semua perintah dijalankan dari folder `ga_pso/`. Butuh Python 3.11 atau lebih baru.
+Semua perintah dijalankan dari root repo. Butuh Python 3.11 atau lebih baru.
 
 ```bash
 python3 -m venv .venv
