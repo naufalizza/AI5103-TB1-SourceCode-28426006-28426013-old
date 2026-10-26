@@ -20,3 +20,8 @@ report/*.synctex.gz
 ga_pso/results/archive_depot_parking/
 
 /report/
+
+# Local document sources and PDF exports
+*.tex
+*.text
+*.pdf

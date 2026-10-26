@@ -32,7 +32,7 @@ def main():
         run("ga_pso/run_experiments.py", "--sensitivity")
     if args.full or args.analyze:
         run("ga_pso/compare.py")
-    for name in ("tables", "figures"):
+    for name in (("tables", "figures") if args.full or args.analyze else ("figures",)):
         source = ROOT / "ga_pso/results" / ("" if args.full or args.analyze else "final_assets") / name
         target = ROOT / "ga_pso/results" / name
         if source != target:

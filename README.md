@@ -39,9 +39,9 @@ Script membuat `.venv`, memasang paket Python yang dipatok versinya, memasang Rc
 .venv/bin/python reproduce.py
 ```
 
-Perintah ini menyalin aset final yang disimpan di `ga_pso/results/final_assets/` ke `ga_pso/results/tables/` dan `ga_pso/results/figures/`, kemudian memperbarui tabel dan tautan gambar di README root. Aset berasal dari laporan eksperimen 2 yang digunakan sebagai sumber konten presentasi Figma. Perintah ini mempertahankan tabel dan grafik final, tanpa menjalankan optimizer atau menghitung ulang hasil. Bahkan tanpa instalasi paket analisis, perintah ini dapat dijalankan dengan `python3 reproduce.py` karena hanya memakai pustaka standar.
+Perintah ini menyalin aset final yang disimpan di `ga_pso/results/final_assets/` ke `ga_pso/results/figures/`, kemudian memperbarui tabel dan tautan gambar di README root. Aset berasal dari laporan eksperimen 2 yang digunakan sebagai sumber konten presentasi Figma. Perintah ini mempertahankan tabel dan grafik final, tanpa menjalankan optimizer atau menghitung ulang hasil. Bahkan tanpa instalasi paket analisis, perintah ini dapat dijalankan dengan `python3 reproduce.py` karena hanya memakai pustaka standar.
 
-Tersedia tujuh tabel LaTeX, yaitu `summary`, `summary-real`, `summary-chao`, `reproduction`, `stats`, `sensitivity`, dan `sensitivity-compact`. Empat gambar tersedia dalam PNG dan PDF: `gap_by_instance`, `convergence`, `routes_C01`, dan `sensitivity`. Tata letak dan teks tambahan pada Figma tetap dikelola di Figma. Script ini tidak mengekspor slide menjadi gambar.
+Tabel ditampilkan dalam Markdown dari CSV hasil tersimpan. Empat gambar PNG tersedia: `gap_by_instance`, `convergence`, `routes_C01`, dan `sensitivity`. File LaTeX (`.tex` dan `.text`) serta PDF diabaikan oleh Git. Mode analisis dapat menghasilkan file tersebut secara lokal. Tata letak dan teks tambahan pada Figma tetap dikelola di Figma.
 
 ## Menjalankan eksperimen dari awal (opsional)
 
