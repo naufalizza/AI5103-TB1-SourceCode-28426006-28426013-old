@@ -18,3 +18,5 @@ report/*.synctex.gz
 **/*.nbi
 **/raw_backup_*/
 ga_pso/results/archive_depot_parking/
+
+/report/

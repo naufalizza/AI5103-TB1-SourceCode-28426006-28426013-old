@@ -1,4 +1,4 @@
-"""Regenerate report assets, optionally rerunning all configured experiments."""
+"""Restore final result assets, optionally rerunning all configured experiments."""
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -33,10 +33,16 @@ def main():
     if args.full or args.analyze:
         run("ga_pso/compare.py")
     for name in ("tables", "figures"):
-        source = ROOT / "ga_pso/results" / ("" if args.full or args.analyze else "report_assets") / name
-        target = ROOT / "report" / name
-        shutil.copytree(source, target, dirs_exist_ok=True)
-    print("Report assets written to report/tables and report/figures")
+        source = ROOT / "ga_pso/results" / ("" if args.full or args.analyze else "final_assets") / name
+        target = ROOT / "ga_pso/results" / name
+        if source != target:
+            shutil.copytree(source, target, dirs_exist_ok=True)
+    if not (args.full or args.analyze):
+        for name in ("summary", "reproduction", "stats", "sensitivity"):
+            shutil.copy2(ROOT / f"ga_pso/results/final_assets/{name}.csv",
+                         ROOT / f"ga_pso/results/{name}.csv")
+    run("render_results_readme.py")
+    print("Final tables and figures are available in the root README.md")
 
 
 if __name__ == "__main__":

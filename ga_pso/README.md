@@ -39,7 +39,7 @@ Untuk alur lengkap dari awal, gunakan `.venv/bin/python reproduce.py --full --fr
 | Lokasi | Isi |
 | --- | --- |
 | `results/raw/` | JSON per algoritma, kasus, dan seed, termasuk ITS |
-| `results/report_assets/` | Salinan tetap tabel dan gambar final laporan |
+| `results/final_assets/` | Salinan tetap tabel dan gambar final laporan |
 | `results/*.csv` | Ringkasan, reproduksi ITS, statistik, sensitivitas, dan seluruh run |
 | `results/figures/` | Grafik analisis dalam PNG/PDF |
 | `results/tables/` | Tabel LaTeX dari analisis |
@@ -47,7 +47,7 @@ Untuk alur lengkap dari awal, gunakan `.venv/bin/python reproduce.py --full --fr
 | `mcttrp/` | Parser, decoder, validator, dan pembaca hasil ITS |
 | `tests/` | Pengujian operator, data dan alur kode |
 
-`.venv/bin/python reproduce.py --analyze` menghitung ulang CSV, tabel, dan grafik dari JSON yang ada, kemudian menyalin aset ke `report/`. Mode default `reproduce.py` memakai aset final agar tampilan dan angka tetap sama dengan laporan yang menjadi sumber Figma.
+`.venv/bin/python reproduce.py --analyze` menghitung ulang CSV, tabel, dan grafik dari JSON yang ada, kemudian memperbarui tabel dan tautan gambar pada README root. Mode default `reproduce.py` memakai aset final agar tampilan dan angka tetap sama dengan laporan yang menjadi sumber Figma.
 
 ## Batas model
 
