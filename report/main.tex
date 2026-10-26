@@ -1,0 +1,452 @@
+\RequirePackage[T1]{fontenc}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{balance}
+\usepackage{microtype}
+\usepackage{dblfloatfix}
+\makeatletter
+\let\tableinput\@@input
+\makeatother
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{8pt plus 2pt minus 2pt}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.85}
+\renewcommand{\dblfloatpagefraction}{0.85}
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{3}
+\emergencystretch=1em
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\graphicspath{{figures/}}
+\renewcommand{\tablename}{Tabel}
+\renewcommand{\figurename}{Gambar}
+\renewcommand{\IEEEkeywordsname}{Kata kunci}
+\renewcommand{\abstractname}{Abstrak}
+\makeatletter
+\renewenvironment{IEEEkeywords}{\normalfont\@IEEEabskeysecsize\bfseries\noindent\textit{\IEEEkeywordsname:}\space}{\par\normalfont\normalsize}
+\renewenvironment{abstract}{\normalfont\@IEEEabskeysecsize\bfseries\itshape\noindent\textit{\abstractname:}\space}{\par\normalfont\normalsize}
+\makeatother
+\renewcommand{\refname}{Daftar Pustaka}
+\begin{document}
+
+\title{Reproduksi Iterated Tabu Search untuk Multi-Compartment Truck and Trailer Routing Problem dan Perbandingannya dengan Genetic Algorithm dan Particle Swarm Optimization}
+
+\author{\IEEEauthorblockN{Muhammad Faishal Dienul Haq}
+\IEEEauthorblockA{NIM 28426006}
+\and
+\IEEEauthorblockN{Naufal Izza Fikry}
+\IEEEauthorblockA{NIM 28426013}
+}
+
+\maketitle
+
+\begin{abstract}
+Penelitian ini mereproduksi heuristik dua fase Davila-Pena dkk.\ untuk persoalan rute truk dan trailer dengan beberapa kompartemen (MC-TTRP), lalu membandingkannya dengan Genetic Algorithm (GA) dan Particle Swarm Optimization (PSO). Kami menjalankan kode R asli penulis setelah memperbaiki lima masalah teknis, termasuk kesalahan akses memori pada fungsi penalti C++. GA menggunakan operator crossover OX dan PMX, sedangkan PSO menggunakan representasi random key. Keduanya memakai decoder split yang sama. Pengujian mencakup delapan instance data nyata dan enam instance benchmark Chao, dengan 10 pengulangan per metode dan anggaran waktu yang setara. Biaya awal Clarke--Wright pada instance Chao sesuai dengan makalah hingga pembulatan, sedangkan selisih solusi ITS terbaik berkisar antara $-1{,}10\%$ dan $0{,}44\%$. ITS memperoleh rata-rata biaya terendah pada seluruh instance Chao. GA menempati urutan kedua dan pada dua instance menghasilkan solusi terbaik yang lebih pendek daripada acuan makalah. Rata-rata biaya PSO masih 21--41\% di atas acuan. Pada data nyata, kedua varian GA selalu mencapai optimum pada tujuh dari delapan instance. Hasil ini perlu dibaca dengan mempertimbangkan batasan decoder serta perbedaan aturan armada dan parkir trailer antara model dan kode asli.
+\end{abstract}
+
+\begin{IEEEkeywords}
+truck and trailer routing problem, kendaraan multi-kompartemen, tabu search, genetic algorithm, particle swarm optimization, reproduksi
+\end{IEEEkeywords}
+
+\section{Pendahuluan}
+
+Sebuah koperasi pakan ternak di Galicia, Spanyol, melayani lebih dari 1.500 peternak dengan sekitar 40 pesanan per hari \cite{davila2023}. Sebagian peternakan memiliki akses sempit sehingga hanya dapat dimasuki truk tanpa trailer. Untuk melayaninya, pengemudi memarkir trailer, mengantar pesanan dengan truk, lalu kembali mengambil trailer. Pengiriman juga mencakup beberapa jenis pakan yang harus dipisahkan. Karena kendaraan tidak memiliki alat takar, setiap kompartemen (\textit{hopper}) hanya boleh memuat produk untuk satu pelanggan. Davila-Pena dkk.\ \cite{davila2023} merumuskan kondisi tersebut sebagai \textit{Multi-Compartment Truck and Trailer Routing Problem} (MC-TTRP), yang menggabungkan TTRP \cite{chao2002} dan persoalan rute kendaraan multi-kompartemen \cite{ostermeier2021}.
+
+Penyelesaian eksak MC-TTRP membutuhkan waktu komputasi yang panjang. Pada pengujian dengan Gurobi, instance berisi 10 pelanggan memerlukan 31,2 jam, sedangkan instance berisi 11 pelanggan belum selesai setelah dua minggu \cite{davila2023}. Penulis kemudian mengusulkan dua fase heuristik: Clarke--Wright (CW) yang dimodifikasi untuk membentuk solusi awal dan \textit{iterated tabu search} (ITS) untuk memperbaikinya. Penulis juga menyarankan pengujian metaheuristik lain, termasuk algoritma evolusioner, dengan hasil tersebut sebagai acuan.
+
+Kami menindaklanjuti saran tersebut dengan membandingkan ITS, GA, dan PSO. MC-TTRP dirumuskan sebagai persoalan pencarian bagi \textit{problem solving agent}. Pekerjaan yang dilakukan mencakup:
+\begin{enumerate}
+\item Mereproduksi ITS dengan kode dan data asli, serta memperbaiki lima masalah yang menghambat eksekusi atau menyebabkan perilaku program tidak terdefinisi.
+\item Menerapkan GA dengan operator \textit{order crossover} (OX) dan \textit{partially mapped crossover} (PMX), serta PSO berbasis \textit{random key}. GA dan PSO menggunakan decoder rute yang sama.
+\item Membandingkan hasil pada 14 instance dengan 10 \textit{seed} per metode dan anggaran waktu yang setara, disertai uji Wilcoxon \textit{rank-sum}, kurva konvergensi, dan analisis sensitivitas.
+\item Memeriksa kelayakan dan menghitung ulang biaya seluruh solusi akhir dengan pemeriksa independen, termasuk solusi dari kode R asli.
+\end{enumerate}
+
+Bagian~\ref{sec:pustaka} membahas penelitian terkait, diikuti formulasi persoalan pada Bagian~\ref{sec:formulasi}. Metode dan rancangan eksperimen dijelaskan pada Bagian~\ref{sec:metode} dan~\ref{sec:desain}. Hasil pengujian dibahas pada Bagian~\ref{sec:hasil} dan~\ref{sec:diskusi}.
+
+\section{Tinjauan Pustaka}\label{sec:pustaka}
+
+Chao \cite{chao2002} memperkenalkan \textit{truck and trailer routing problem} dengan dua jenis pelanggan. \textit{Vehicle customer} (VC) dapat dilayani truk bertrailer, sedangkan \textit{truck customer} (TC) hanya dapat dilayani truk tanpa trailer. Chao menggunakan heuristik konstruksi dan \textit{tabu search}, serta menyusun 21 instance uji dari instance VRP Christofides. Penelitian berikutnya menggunakan \textit{tabu search} \cite{scheuerer2006}, \textit{simulated annealing} \cite{lin2009}, gabungan pemrograman matematis dan \textit{local search} \cite{caramia2010a}, serta \textit{large neighborhood search} \cite{derigs2013}.
+
+Pada persoalan kendaraan multi-kompartemen, El Fallahi dkk.\ \cite{elfallahi2008} membandingkan algoritma memetika dan \textit{tabu search}. Hasil \textit{tabu search} sedikit lebih baik, tetapi membutuhkan waktu lebih lama. Silvestrin dan Ritt \cite{silvestrin2017} mengusulkan ITS untuk MC-VRP, yang menjadi salah satu dasar metode Davila-Pena dkk.\ \cite{davila2023}. Ostermeier dkk.\ \cite{ostermeier2021} menyusun tipologi MC-VRP. Dalam tinjauan Davila-Pena dkk., penelitian sebelumnya yang menggabungkan trailer dan kompartemen adalah persoalan pengumpulan susu oleh Caramia dan Guerriero \cite{caramia2010b}.
+
+Prins \cite{prins2004} menggunakan kromosom berupa permutasi pelanggan tanpa pemisah rute (\textit{giant tour}) pada GA untuk persoalan rute. Prosedur \textit{split} berbasis lintasan terpendek membagi urutan tersebut menjadi rute dengan biaya minimum. OX \cite{davis1985} dan PMX \cite{goldberg1985} merupakan dua operator \textit{crossover} untuk representasi permutasi. PSO awalnya dikembangkan untuk ruang kontinu oleh Kennedy dan Eberhart \cite{kennedy1995}, kemudian dilengkapi bobot inersia oleh Shi dan Eberhart \cite{shi1998}. Representasi \textit{random key} \cite{bean1994} mengubah vektor kontinu menjadi permutasi dengan mengurutkan nilainya, sehingga persamaan PSO dapat digunakan pada persoalan urutan.
+
+\section{Formulasi Persoalan}\label{sec:formulasi}
+
+\subsection{Deskripsi MC-TTRP}
+
+Persoalan dinyatakan pada graf lengkap $G=(N,E)$, dengan $N=\{0,1,\dots,n\}$. Simpul 0 adalah depot dan $c_{ij}$ menyatakan jarak antara simpul $i$ dan $j$. Pelanggan terbagi menjadi himpunan VC ($N_1$) dan TC ($N_2$). Pelanggan $i$ meminta $d_{if}$ unit produk $f\in F$. Armada terdiri atas $m_T$ truk dan $m_L\le m_T$ trailer. Setiap truk memiliki $|H^T|$ \textit{hopper} dengan kapasitas $Q_T^H$, sedangkan setiap trailer memiliki $|H^L|$ \textit{hopper} dengan kapasitas $Q_L^H$. Satu \textit{hopper} hanya memuat satu jenis produk untuk satu pelanggan. Permintaan pelanggan dapat dibagi ke beberapa \textit{hopper}.
+
+Pada notasi tersebut, $n$ adalah jumlah pelanggan, $N$ adalah himpunan simpul, dan $E$ adalah himpunan sisi yang menghubungkan pasangan simpul. Indeks $i$ dan $j$ menyatakan simpul, sedangkan $f$ menyatakan jenis produk dalam himpunan $F$. Himpunan $N_1$ dan $N_2$ saling terpisah dan bersama-sama mencakup seluruh pelanggan. $H^T$ dan $H^L$ adalah himpunan \textit{hopper} truk dan trailer; tanda $|\cdot|$ menyatakan banyak anggota himpunan. Huruf $T$ dan $L$ membedakan truk dan trailer, sedangkan superskrip $H$ pada kapasitas menandai kapasitas per \textit{hopper}, bukan pangkat.
+
+Solusi terdiri dari rute dengan tiga tipe \cite{chao2002,davila2023}:
+\begin{itemize}
+\item \textit{pure truck route} (PTR): truk tanpa trailer, boleh melayani VC dan TC;
+\item \textit{pure vehicle route} (PVR): truk dan trailer sepanjang rute, hanya melayani VC;
+\item \textit{mixed vehicle route} (MVR): \textit{main tour} truk bertrailer yang melayani VC. Di sebuah VC pada \textit{main tour}, trailer diparkir dan truk menjalani satu atau lebih \textit{sub-tour} sendirian untuk melayani VC atau TC, lalu kembali mengambil trailer.
+\end{itemize}
+
+Tujuannya adalah meminimalkan total jarak tempuh semua rute, yaitu persamaan (1) pada \cite{davila2023}:
+\begin{equation}
+\min \; f(S) = \sum_{r\in S}\Bigl(\sum_{(i,j)\in \text{main}(r)} c_{ij} + \sum_{t\in \text{sub}(r)}\;\sum_{(i,j)\in t} c_{ij}\Bigr).\label{eq:obj}
+\end{equation}
+Pada \eqref{eq:obj}, $S$ adalah satu solusi lengkap berupa kumpulan rute, $r$ adalah salah satu rute dalam $S$, dan $f(S)$ adalah total jaraknya. $\text{main}(r)$ berisi sisi pada lintasan utama rute $r$, termasuk perjalanan dari dan kembali ke depot. Untuk PTR, lintasan ini dijalani truk saja. $\text{sub}(r)$ adalah kumpulan \textit{sub-tour} pada rute tersebut, dan $t$ menyatakan salah satunya. Notasi $(i,j)\in t$ berarti kendaraan bergerak dari simpul $i$ ke $j$ pada \textit{sub-tour} $t$. Tanda $\sum$ menjumlahkan jarak semua sisi yang dilalui. Jadi, biaya lintasan utama dan seluruh \textit{sub-tour} dijumlahkan untuk setiap rute. Operator $\min$ meminta solusi dengan total jarak terkecil.
+
+Setiap pelanggan harus dilayani tepat satu kali. TC tidak boleh berada pada \textit{main tour} kendaraan bertrailer, dan seluruh muatan \textit{sub-tour} harus dapat dibawa oleh truk. Alokasi produk mengikuti aturan \textit{hopper}, sedangkan jumlah kendaraan dibatasi oleh armada yang tersedia.
+
+\subsection{Aturan armada dan parkir trailer}\label{sec:armada}
+
+Batasan (10) pada model MILP dalam \cite{davila2023} melarang truk penarik trailer menjalankan PTR. Dengan aturan ini, jumlah PTR dibatasi oleh $m_T-m_L$. Namun, Tabel 4 makalah dan keluaran kode R menggunakan aturan yang berbeda. Sebagai contoh, pada instance 2 tersedia 8 truk dan 5 trailer, sedangkan solusi memakai 4 trailer dan 4 PTR. Jumlah PTR tersebut melebihi batas $8-5=3$. Dalam eksperimen ini, seluruh algoritma mengikuti aturan pada heuristik dan hasil penulis:
+\begin{equation}
+n_{\text{PVR}}+n_{\text{MVR}}\le m_L, \qquad n_{\text{PVR}}+n_{\text{MVR}}+n_{\text{PTR}}\le m_T.\label{eq:fleet}
+\end{equation}
+Simbol $n_{\text{PVR}}$, $n_{\text{MVR}}$, dan $n_{\text{PTR}}$ menyatakan jumlah rute masing-masing tipe. Karena setiap PVR dan MVR memerlukan satu trailer, jumlah keduanya tidak boleh melebihi $m_L$, yaitu banyak trailer yang tersedia. Setiap rute memerlukan satu truk, sehingga jumlah ketiga tipe rute tidak boleh melebihi $m_T$, yaitu banyak truk yang tersedia. Tanda $\le$ menyatakan batas maksimum yang boleh dipakai.
+
+Makalah menyebut depot sebagai calon lokasi parkir trailer, tetapi batasan (10) juga melarang rute truk bertrailer yang berakar di depot. Nilai optimum Gurobi dihitung dengan model tersebut. Kode ITS asli tidak memarkir trailer di depot pada 290 MVR yang kami amati. Karena itu, eksperimen ini membatasi titik awal \textit{sub-tour} pada VC di \textit{main tour}. Pada percobaan awal yang mengizinkan parkir di depot, GA menghasilkan biaya di bawah optimum Gurobi pada lima instance P. Pada P6, misalnya, biayanya 199 km, sedangkan acuan optimumnya 222 km. Perbedaan ini menunjukkan bahwa aturan parkir perlu disamakan sebelum hasil dibandingkan. Batas waktu kerja pengemudi juga tidak digunakan karena kode asli tidak menerapkannya.
+
+\subsection{Rumusan sebagai persoalan pencarian}
+
+Untuk ketiga algoritma, komponen persoalan pencarian adalah sebagai berikut.
+\begin{itemize}
+\item Keadaan (\textit{state}) berupa kumpulan rute lengkap dengan tipe rute dan alokasi muatannya. Pada GA dan PSO, permutasi pelanggan $\pi$ diterjemahkan menjadi rute oleh decoder pada Bagian~\ref{sec:decoder}.
+\item Fungsi biaya menghitung total jarak pada \eqref{eq:obj}. Selama pencarian, solusi yang melanggar batasan dapat diberi penalti. Hasil akhir hanya memuat jarak solusi yang layak.
+\item Operator ITS meliputi \textit{relocate}, \textit{exchange}, 2-opt, 2-opt*, dan perpindahan khusus \textit{sub-tour}. GA menggunakan seleksi, \textit{crossover}, dan mutasi, sedangkan PSO memperbarui kecepatan serta posisi partikel.
+\item Pencarian berakhir setelah anggaran komputasi habis dan mengembalikan solusi layak terbaik yang ditemukan, tanpa menetapkan satu \textit{goal state} tertentu.
+\end{itemize}
+
+Kualitas solusi diukur dengan \textit{gap} terhadap nilai acuan $z^{\text{ref}}$:
+\begin{equation}
+\text{gap} = \frac{z - z^{\text{ref}}}{z^{\text{ref}}}\times 100\%.\label{eq:gap}
+\end{equation}
+Di sini, $z$ adalah biaya solusi yang sedang dinilai dan $z^{\text{ref}}$ adalah biaya acuan untuk instance yang sama. Superskrip $\text{ref}$ menandai nilai acuan, bukan pangkat. Selisih biaya dibagi dengan acuan agar hasil antar-instance dapat dibandingkan dalam persen. Gap nol berarti biayanya sama dengan acuan, gap positif berarti lebih tinggi, dan gap negatif berarti lebih rendah. Acuan P1--P8 adalah optimum Gurobi, sedangkan acuan C01--C06 adalah hasil ITS terbaik pada makalah.
+
+\section{Metode}\label{sec:metode}
+
+\subsection{Baseline: Clarke--Wright dan Iterated Tabu Search}
+
+Metode acuan adalah heuristik Davila-Pena dkk.\ \cite{davila2023}, yang dijalankan dengan kode R asli penulis\footnote{Kode versi 0.1, berlisensi GPLv3, tersedia di \url{https://github.com/LauraDavilaPena/ITS_MC-TTRP}.}. Fase CW menggunakan dua matriks penghematan. Matriks pertama menghitung $s_{ij}=c_{i0}+c_{0j}-c_{ij}$. Simbol $s_{ij}$ menyatakan jarak yang dihemat saat kunjungan ke pelanggan $i$ dan $j$ digabungkan: perjalanan dari $i$ ke depot sepanjang $c_{i0}$ dan dari depot ke $j$ sepanjang $c_{0j}$ diganti dengan perjalanan langsung sepanjang $c_{ij}$. Nilai penghematan positif berarti penggabungan memperpendek jarak. Matriks kedua menghitung penghematan saat rute TC diubah menjadi \textit{sub-tour} dari suatu VC. Solusi awal kemudian diperbaiki melalui 2-opt, 3-opt, 4-opt*, dan gerakan \textit{local search}.
+
+Pada fase ITS, algoritma mengeluarkan dan menyisipkan kembali $\phi$ pelanggan acak. Simbol $\phi$ menyatakan banyak pelanggan yang dipindahkan dalam satu perturbasi. Pada kode yang digunakan, jumlah ini dipilih secara acak dari rentang 1--5\% jumlah pelanggan kandidat, dengan kedua batas dibulatkan ke atas. Langkah ini mengubah solusi sebelum \textit{tabu search} dijalankan. Tabu search memilih gerakan terbaik di seluruh \textit{neighborhood}, termasuk gerakan yang sementara menaikkan biaya atau melanggar kapasitas. Biaya rute dihitung sebagai
+\begin{equation}
+F(r) = d(r) + \alpha\, C(r),\label{eq:tabu}
+\end{equation}
+dengan $F(r)$ menyatakan biaya rute selama pencarian, $d(r)$ adalah jarak rute, $C(r)$ adalah penalti kelebihan muatan, dan $\alpha$ adalah bobot penalti. Jika tidak ada pelanggaran kapasitas, $C(r)$ bernilai nol sehingga $F(r)$ sama dengan jarak rute. Bobot $\alpha$ mengatur seberapa besar pelanggaran memengaruhi pemilihan gerakan.
+
+Fungsi \texttt{update\_penalties} pada kode yang dijalankan memperbarui $\alpha$ menjadi $\min((1+\gamma)\alpha,100)$ saat solusi tidak layak dan $\max((1+\gamma)/\alpha,0{,}01)$ saat solusi layak. Di sini, $\gamma\sim U[0,1]$ adalah bilangan acak dari distribusi seragam pada rentang 0 hingga 1. Operator $\min$ membatasi bobot baru agar tidak melebihi 100, sedangkan $\max$ membatasinya agar tidak kurang dari 0,01. Uraian ini mengikuti operasi pada kode, termasuk pembagian $(1+\gamma)$ dengan bobot lama saat solusi layak.
+
+Lama status tabu dihitung dengan membulatkan ke bawah nilai $1+u\sqrt{n\,n_r}$. Simbol $u$ adalah bilangan acak seragam pada rentang 0 hingga 1, $n$ adalah jumlah pelanggan, dan $n_r$ adalah jumlah rute. Nilai ini menentukan berapa langkah suatu perpindahan dilarang sementara agar pencarian tidak segera mengulanginya. Algoritma kembali ke solusi layak terbaik dengan peluang $(\text{iter}/\text{max\_iter})^2$. Simbol $\text{iter}$ adalah nomor iterasi ITS saat ini dan $\text{max\_iter}$ adalah batas iterasinya. Karena perbandingan tersebut dikuadratkan, peluang kembali meningkat ketika pencarian mendekati akhir. ITS dijalankan selama 100 iterasi, mengikuti makalah.
+
+Kami memperbaiki lima masalah pada kode asli agar dapat dijalankan di macOS dengan R 4.6.1:
+\begin{enumerate}
+\item Pustaka \texttt{itsmcttrp.dll} hanya dapat digunakan di Windows. Kami mengompilasi ulang \texttt{movlist.cpp} untuk macOS.
+\item Operator \texttt{\&\&} dan \texttt{||} memicu galat saat menerima vektor pada R 4.3 dan versi berikutnya. Kode asli ditulis untuk R 4.0.2, yang menggunakan elemen pertama vektor. Karena kapasitas tersimpan sebagai vektor dengan nilai yang sama untuk setiap trailer, kami memulihkan perilaku versi lama pada kedua operator tersebut.
+\item Fungsi C++ \texttt{calc\_penalty\_route\_MCTTRP} mengakses kolom permintaan $j+1$ untuk $j=0,\dots,n_F-1$. Di sini, $j$ adalah indeks kolom produk dalam kode C++ dan $n_F$ adalah jumlah jenis produk. Karena indeks dimulai dari 0, kolom terakhir yang sah adalah $n_F-1$. Produk pertama terlewat dan akses terakhir berada di luar matriks. Kami mengganti indeksnya menjadi $j$ karena kesalahan ini memengaruhi penalti $C(r)$ pada \eqref{eq:tabu}.
+\item Skrip reproduksi belum memuat kode solver. Kami menambahkan pemuatan kode tersebut.
+\item Skrip data nyata mencetak variabel yang belum didefinisikan. Kami memperbaiki variabel keluarannya.
+\end{enumerate}
+Kami menambahkan pencatatan biaya terbaik per iterasi untuk menyusun kurva konvergensi. Perbaikan fungsi penalti mengubah perilaku kode, sehingga program yang diuji tidak sepenuhnya identik dengan biner yang digunakan penulis.
+
+\subsection{Decoder giant tour}\label{sec:decoder}
+
+GA dan PSO menggunakan permutasi pelanggan $\pi=(\pi_1,\dots,\pi_n)$. Mengikuti prosedur \textit{split} \cite{prins2004}, decoder membagi permutasi menjadi segmen berurutan, dengan setiap segmen mewakili satu rute. Segmen $\pi_{i+1..j}$ dapat dibentuk menjadi:
+\begin{itemize}
+\item PTR, bila seluruh muatannya muat di \textit{hopper} truk;
+\item PVR, bila segmen tidak berisi TC dan muatannya muat di truk dan trailer;
+\item MVR, bila segmen berisi VC dan TC. VC membentuk \textit{main tour} dan TC membentuk satu \textit{sub-tour} yang berakar di VC segmen dengan biaya sisip terkecil.
+\end{itemize}
+Simbol $\pi_k$ menyatakan ID pelanggan pada posisi ke-$k$ dalam urutan, dan setiap pelanggan muncul tepat satu kali. Notasi $\pi_{i+1..j}$ berarti potongan urutan dari posisi $i+1$ sampai $j$, termasuk kedua ujungnya. Jadi, indeks $i$ dan $j$ pada decoder menyatakan posisi dalam permutasi, bukan langsung ID pelanggan.
+
+Decoder memeriksa kelayakan muatan dengan pemrograman dinamis berdasarkan jumlah \textit{hopper} trailer yang digunakan. Untuk setiap permintaan $d_{if}$, decoder mempertimbangkan pembagian ke $x$ \textit{hopper} trailer dan sisa muatan ke $y$ \textit{hopper} truk, dengan
+\[
+y=\max\!\left(0,\left\lceil\frac{d_{if}-xQ_L^H}{Q_T^H}\right\rceil\right).
+\]
+Pada rumus ini, $d_{if}$ adalah jumlah produk $f$ yang diminta pelanggan $i$, $x$ adalah banyak \textit{hopper} trailer yang dialokasikan untuk permintaan itu, dan $y$ adalah banyak \textit{hopper} truk yang masih diperlukan. Kapasitas per \textit{hopper} trailer dan truk masing-masing adalah $Q_L^H$ dan $Q_T^H$. Selisih $d_{if}-xQ_L^H$ menyatakan muatan yang belum tertampung di trailer. Pembagian dengan $Q_T^H$ mengubahnya menjadi kebutuhan \textit{hopper} truk. Tanda $\lceil\cdot\rceil$ membulatkan ke atas karena \textit{hopper} harus dihitung sebagai bilangan bulat. Operator $\max(0,\cdot)$ mencegah jumlahnya menjadi negatif ketika seluruh permintaan sudah tertampung di trailer. Untuk pelanggan TC yang dilayani pada \textit{sub-tour}, muatannya harus berada di truk sehingga $x=0$. Alokasi seluruh permintaan tetap dibatasi oleh jumlah \textit{hopper} yang tersedia.
+
+Misalkan $V(j,a,b)$ adalah biaya minimum untuk melayani $\pi_1,\dots,\pi_j$ dengan $a$ kendaraan bertrailer dan $b$ PTR. Rekurensinya
+\begin{equation}
+\begin{aligned}
+V(j,a,b)=\min_{i<j}\bigl\{&V(i,a{-}1,b)+c^{\text{K}}_{ij},\\
+&V(i,a,b{-}1)+c^{\text{T}}_{ij}\bigr\},
+\end{aligned}\label{eq:split}
+\end{equation}
+dengan $a$ menyatakan jumlah kendaraan bertrailer dan $b$ jumlah PTR yang digunakan untuk melayani $j$ pelanggan pertama. Simbol $V$ menyimpan biaya minimum untuk keadaan tersebut. Indeks $i$ adalah posisi batas sebelum rute terakhir; operator $\min_{i<j}$ mencoba seluruh batas dari 0 sampai $j-1$. Biaya $c^{\text{K}}_{ij}$ adalah biaya melayani segmen $\pi_{i+1..j}$ dengan PVR atau MVR, sedangkan $c^{\text{T}}_{ij}$ adalah biayanya dengan PTR. Superskrip $\text{K}$ dan $\text{T}$ menandai jenis kendaraan, bukan pangkat. Kedua biaya segmen ini berbeda dari $c_{ij}$ pada graf, yang hanya menyatakan jarak antara dua simpul.
+
+Pilihan pertama pada \eqref{eq:split} menambahkan satu rute bertrailer pada solusi sebelumnya yang memakai $a-1$ kendaraan bertrailer dan $b$ PTR. Pilihan kedua menambahkan satu PTR pada solusi sebelumnya yang memakai $a$ kendaraan bertrailer dan $b-1$ PTR. Decoder mengambil pilihan dengan biaya terendah. Kondisi awalnya $V(0,0,0)=0$, yaitu belum ada pelanggan yang dilayani dan belum ada kendaraan yang digunakan. Keadaan yang tidak dapat dicapai, termasuk jumlah kendaraan negatif, diberi nilai $\infty$. Simbol $\infty$ menandai pilihan yang tidak diizinkan, sehingga tidak terpilih saat minimisasi. Biaya segmen juga bernilai $\infty$ jika tipe rute tersebut tidak layak.
+
+Bila tidak ada pemotongan yang memenuhi \eqref{eq:fleet}, \textit{decoder} mengizinkan hingga tiga kendaraan tambahan dengan penalti
+\begin{equation}
+P = 2n\max_{i,j}c_{ij} + 1\label{eq:pen}
+\end{equation}
+per kendaraan berlebih. Simbol $P$ adalah penalti untuk satu kendaraan tambahan, $n$ adalah jumlah pelanggan, dan $\max_{i,j}c_{ij}$ adalah jarak terbesar antara dua simpul pada instance tersebut. Dalam struktur rute decoder, paling banyak $2n$ sisi diperlukan untuk melayani $n$ pelanggan dan menutup seluruh rute serta \textit{sub-tour}. Mengalikannya dengan jarak terbesar membentuk batas atas jarak solusi. Tambahan 1 membuat penalti melampaui batas tersebut. Karena itu, solusi yang melebihi armada dinilai lebih buruk daripada solusi layak, sementara sesama solusi tak layak tetap dapat diperingkat. Solusi layak terbaik dicatat terpisah. Satu evaluasi membutuhkan sekitar 0,1 ms untuk 50--75 pelanggan.
+
+Decoder hanya membentuk satu \textit{sub-tour} per MVR dan menempatkan seluruh VC pada \textit{main tour}. Model asli mengizinkan beberapa \textit{sub-tour} dan VC di dalamnya. Karena itu, ruang solusi GA dan PSO lebih terbatas daripada ITS.
+
+\subsection{Genetic Algorithm}
+
+GA menggunakan permutasi pelanggan sebagai kromosom dan biaya dari decoder sebagai nilai \textit{fitness} yang diminimalkan \cite{prins2004}. Populasi awal dibentuk secara acak. Seleksi orang tua menggunakan turnamen dengan $k=3$, dengan $k$ menyatakan jumlah kandidat dalam satu turnamen. Kandidat dengan biaya terendah dipilih sebagai satu orang tua. Sesuai ketentuan tugas, kami membandingkan dua operator \textit{crossover}:
+\begin{itemize}
+\item \textbf{OX} \cite{davis1985}: segmen $[\ell,u]$ dari orang tua pertama disalin ke posisi yang sama, lalu sisa posisi diisi dengan urutan relatif gen orang tua kedua mulai dari $u+1$. Simbol $\ell$ dan $u$ adalah posisi awal dan akhir potongan, termasuk kedua ujungnya. Pengisian kembali ke awal permutasi setelah mencapai posisi terakhir. OX mempertahankan urutan relatif, yang relevan karena decoder memotong permutasi menjadi segmen berurutan.
+\item \textbf{PMX} \cite{goldberg1985}: segmen yang sama disalin, lalu gen orang tua kedua di jendela tersebut dipetakan lewat pasangan $p_1[i]\leftrightarrow p_2[i]$. Simbol $p_1$ dan $p_2$ adalah dua permutasi orang tua, sedangkan $p_1[i]$ dan $p_2[i]$ adalah gen pada posisi $i$ di dalam potongan. Tanda $\leftrightarrow$ menyatakan pasangan pemetaan untuk menyelesaikan konflik gen yang berulang. PMX lebih mempertahankan posisi absolut gen.
+\end{itemize}
+Mutasi membalik urutan pelanggan dalam segmen acak. Pada urutan kunjungan dengan jarak simetris, inversi mempertahankan jarak antarpelanggan di dalam segmen dan mengubah sambungan di kedua ujungnya. Biaya rute tetap dihitung ulang oleh decoder. Dua individu terbaik dipertahankan pada generasi berikutnya melalui elitisme.
+
+Ukuran populasi ditetapkan 100, peluang \textit{crossover} 0,9, peluang mutasi 0,2, dan elitisme 2. Pada instance 50 pelanggan, populasi ini menghasilkan sekitar 100 generasi dalam 10 detik. Peluang mutasi diuji lebih lanjut melalui analisis sensitivitas pada Bagian~\ref{sec:sens}.
+
+Peluang \textit{crossover} menentukan apakah dua orang tua digabungkan untuk membentuk satu anak. Peluang mutasi menentukan apakah satu anak mengalami inversi segmen; peluang ini berlaku per anak, bukan per gen. Elitisme 2 berarti dua kromosom dengan biaya terendah disalin tanpa perubahan ke generasi berikutnya.
+
+\subsection{Particle Swarm Optimization}
+
+Kami memilih PSO sebagai metode \textit{swarm intelligence} karena representasi \textit{random key} memungkinkan penggunaan persamaan PSO dengan decoder yang sama seperti GA. ACO juga dapat digunakan untuk persoalan rute, tetapi memerlukan prosedur konstruksi yang memperhitungkan trailer dan kompartemen. Penggunaan decoder yang sama membantu membatasi perbedaan GA dan PSO pada cara pencariannya.
+
+Setiap partikel memiliki posisi $\mathbf{x}\in[0,1]^n$, dan permutasinya adalah $\pi=\operatorname{argsort}(\mathbf{x})+1$ \cite{bean1994}. Huruf tebal menandai vektor, yaitu deretan $n$ bilangan, dengan $n$ sama dengan jumlah pelanggan. Komponen $x_i$ adalah kunci untuk pelanggan $i$ dan nilainya dibatasi antara 0 dan 1. Fungsi $\operatorname{argsort}$ mengembalikan indeks komponen setelah nilainya diurutkan dari kecil ke besar. Penambahan 1 mengubah indeks Python yang dimulai dari 0 menjadi ID pelanggan yang dimulai dari 1. Dengan demikian, kunci terkecil menentukan pelanggan pertama yang masuk ke decoder. Jika dua kunci sama, kode mempertahankan urutan indeksnya.
+
+Pembaruan berikut dilakukan berurutan, mengikuti PSO \textit{global best} dengan bobot inersia \cite{kennedy1995,shi1998}:
+\begin{align}
+\mathbf{v} &\leftarrow w\mathbf{v} + c_1\mathbf{r}_1\odot(\mathbf{p}-\mathbf{x}) + c_2\mathbf{r}_2\odot(\mathbf{g}-\mathbf{x}),\label{eq:vel}\\
+\mathbf{v} &\leftarrow \operatorname{clip}(\mathbf{v},-v_{\max},v_{\max}),\label{eq:vclip}\\
+\mathbf{x} &\leftarrow \operatorname{clip}(\mathbf{x}+\mathbf{v},0,1).\label{eq:pos}
+\end{align}
+Pada \eqref{eq:vel}, $\mathbf{v}$ adalah vektor kecepatan, yaitu besar dan arah perubahan setiap kunci; $w$ adalah bobot inersia yang mempertahankan sebagian kecepatan sebelumnya. Vektor $\mathbf{p}$ menyimpan posisi terbaik partikel itu sendiri (\textit{personal best}), sedangkan $\mathbf{g}$ menyimpan posisi terbaik yang ditemukan seluruh kawanan (\textit{global best}). Keduanya berupa vektor kunci, bukan daftar rute. Selisih $\mathbf{p}-\mathbf{x}$ mengarahkan partikel ke pengalaman terbaiknya sendiri, dan $\mathbf{g}-\mathbf{x}$ mengarahkannya ke pengalaman terbaik kawanan. Posisi terbaik dipilih berdasarkan biaya dari decoder, termasuk penalti selama pencarian.
+
+Koefisien $c_1$ mengatur pengaruh pengalaman individu dan $c_2$ mengatur pengaruh kawanan. Keduanya berbeda dari notasi jarak $c_{ij}$. Vektor acak $\mathbf{r}_1,\mathbf{r}_2\sim U(0,1)^n$ masing-masing berisi $n$ bilangan acak seragam antara 0 dan 1. Tanda $\sim$ berarti diambil dari distribusi tersebut, dan superskrip $n$ menyatakan jumlah komponennya. Operator $\odot$ berarti perkalian pada posisi yang bersesuaian, bukan perkalian matriks. Karena itu, kontribusi inersia, pengalaman individu, dan pengalaman kawanan dihitung untuk setiap pelanggan. Tanda $\leftarrow$ berarti nilai di sebelah kiri diperbarui dengan hasil perhitungan di sebelah kanan.
+
+Fungsi $\operatorname{clip}$ membatasi setiap komponen ke interval yang ditentukan: nilai di bawah batas bawah diganti dengan batas bawah, sedangkan nilai di atas batas atas diganti dengan batas atas. Pada \eqref{eq:vclip}, $v_{\max}$ adalah batas besar kecepatan, sehingga setiap komponen dibatasi antara $-v_{\max}$ dan $v_{\max}$. Kecepatan yang sudah dibatasi inilah yang dipakai pada langkah berikutnya. Pada \eqref{eq:pos}, kecepatan ditambahkan ke posisi lama, lalu setiap kunci dibatasi ke interval $[0,1]$. Posisi baru kemudian diurutkan kembali untuk memperoleh permutasi yang dinilai decoder.
+
+Bobot inersia turun linear terhadap fraksi anggaran yang sudah terpakai, $\tau\in[0,1]$:
+\begin{equation}
+w(\tau)=w_{\text{start}}+(w_{\text{end}}-w_{\text{start}})\,\tau.\label{eq:inertia}
+\end{equation}
+Pada \eqref{eq:inertia}, $w(\tau)$ adalah bobot inersia pada tahap pencarian saat ini, $w_{\text{start}}$ adalah bobot awal, dan $w_{\text{end}}$ adalah bobot akhir. Simbol $\tau$ menyatakan waktu yang sudah terpakai dibagi anggaran waktu. Pada awal pencarian, $\tau=0$ sehingga bobot sama dengan $w_{\text{start}}$. Ketika anggaran habis, $\tau=1$ sehingga bobot mencapai $w_{\text{end}}$. Karena bobot akhir lebih kecil, pengaruh kecepatan lama berkurang secara bertahap.
+PSO menggunakan 50 partikel, $w_{\text{start}}=0{,}9$, $w_{\text{end}}=0{,}4$, $c_1=c_2=2$, dan $v_{\max}=0{,}2$. Nilai $c_1$ dan $c_2$ mengikuti \cite{kennedy1995}. Batas kecepatan sebesar 20\% rentang kunci membatasi perubahan posisi setiap langkah. Posisi tetap dibatasi pada interval $[0,1]$; jika banyak kunci berada pada batas yang sama, perubahan permutasi dapat berkurang. Pengaruh $w_{\text{end}}$ diuji melalui analisis sensitivitas.
+
+\section{Desain Eksperimen}\label{sec:desain}
+
+\subsection{Data}
+
+Seluruh algoritma menggunakan berkas instance dari repositori penulis. Pengujian otomatis memeriksa kesamaan berkas dengan \textit{hash} SHA-256. Data terdiri atas dua kelompok:
+\begin{itemize}
+\item \textbf{P1--P8}: data nyata koperasi dengan 8--10 pelanggan, 4 jenis pakan, 2 truk (13 \textit{hopper} @1.500 kg), dan 1 trailer (15 \textit{hopper} @2.000 kg). Jaraknya dalam km. Nilai acuan adalah solusi eksak Gurobi pada Tabel 5 \cite{davila2023}.
+\item \textbf{C01--C06}: instance Chao \cite{chao2002} yang diberi kompartemen oleh penulis, dengan 50 pelanggan (C01--C03) dan 75 pelanggan (C04--C06). Proporsi TC adalah 25\%, 50\%, dan 75\% berturut-turut. Truk memiliki 20 \textit{hopper} berkapasitas 5, dan trailer memiliki 10 \textit{hopper} berkapasitas 10. Jaraknya Euklides. Belum ada solusi optimal untuk instance ini, sehingga nilai acuannya adalah hasil ITS terbaik dari 10 run pada Tabel 4 \cite{davila2023}.
+\end{itemize}
+Jumlah truk dan trailer mengikuti skrip reproduksi penulis, yaitu (2,1) untuk P1--P8, (8,5) untuk C01--C03, (13,8) untuk C04, serta (14,8) untuk C05--C06. Pengujian dibatasi pada enam instance Chao karena keterbatasan waktu komputasi untuk tugas ini. Tabel 4 pada paper melaporkan waktu komputasi 17--93 menit untuk instance 07--21 \cite{davila2023}. Keterangan tabel tersebut tidak merinci apakah waktu ini dihitung per pengulangan.
+
+\subsection{Anggaran dan pengaturan}
+
+Setiap metode dijalankan 10 kali per instance dengan \textit{seed} 1--10. ITS menggunakan 100 iterasi, sedangkan GA dan PSO diberi batas waktu nyata (\textit{wall-clock}) sebesar rata-rata waktu ITS pada instance yang sama. Waktu dipakai sebagai anggaran karena evaluasi satu gerakan ITS berbeda dari evaluasi satu permutasi GA atau PSO. Seluruh pengujian menggunakan komputer Apple M5 dengan 10 inti dan 8 proses paralel. GA serta PSO ditulis dalam Python 3.14 dengan Numba, sedangkan ITS menggunakan R dan C++.
+
+Kami melaporkan biaya terbaik, rata-rata, simpangan baku, biaya terburuk, serta gap pada \eqref{eq:gap}. Pemeriksa independen memeriksa cakupan pelanggan, jenis pelanggan, armada pada \eqref{eq:fleet}, dan alokasi \textit{hopper}, lalu menghitung ulang biaya solusi akhir. Pemeriksa juga diuji pada solusi optimal 207 km yang dicantumkan dalam Bagian 5.1 makalah. Perbedaan hasil diuji dengan Wilcoxon \textit{rank-sum} dua sisi \cite{wilcoxon1945} pada ambang signifikansi $\alpha_{\mathrm{uji}}=0{,}05$. Subskrip $\mathrm{uji}$ membedakan ambang statistik ini dari bobot penalti $\alpha$ pada ITS. Analisis sensitivitas menggunakan C01 dengan 5 \textit{seed} untuk peluang mutasi GA-OX $\in\{0{,}05;0{,}1;0{,}2;0{,}4\}$ dan $w_{\text{end}}$ PSO $\in\{0{,}2;0{,}4;0{,}6;0{,}8\}$. Tanda $\in$ berarti parameter dipilih dari himpunan nilai di dalam kurung kurawal.
+
+\section{Hasil}\label{sec:hasil}
+
+\subsection{Reproduksi ITS}
+
+\begin{table*}[t]
+\caption{Reproduksi heuristik dua fase: hasil makalah \cite{davila2023} dibandingkan dengan 10 pengulangan kode yang telah diperbaiki. Selisih dihitung dari ITS terbaik kami terhadap ITS makalah.}
+\label{tab:repro}
+\centering\footnotesize
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& \multicolumn{2}{c}{CW} & \multicolumn{3}{c}{ITS} & & \multicolumn{2}{c}{Waktu per run (s)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(lr){8-9}
+Instance & Makalah & Kami & Makalah & Terbaik kami & Rata-rata kami & Selisih (\%) & Makalah & Kami\\
+\midrule
+\tableinput tables/reproduction.tex 
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Tabel~\ref{tab:repro} membandingkan hasil reproduksi dengan angka pada makalah. Biaya awal CW pada keenam instance Chao sesuai hingga pembulatan; pada C01, misalnya, nilainya 662,94 dibandingkan 662,93. Kesesuaian metode deterministik ini mendukung pemeriksaan bahwa data dan tahap konstruksi telah dijalankan dengan benar. Selisih solusi ITS terbaik berkisar antara $-1{,}10\%$ dan $0{,}44\%$ terhadap acuan makalah. Waktu per pengulangan pada instance Chao adalah 264--630 detik, sedangkan makalah melaporkan 317--848 detik.
+
+Pada P1--P8, solusi ITS terbaik mencapai nilai optimum Gurobi pada seluruh instance. Hasil P2, P6, P7, dan P8 lebih rendah daripada hasil heuristik pada Tabel 5 makalah, yaitu 142, 223, 238, dan 213 km. Jumlah pengulangan untuk tabel tersebut tidak dijelaskan dalam makalah. Pemilihan hasil terbaik dari 10 pengulangan dapat menjelaskan sebagian selisih; sebagai perbandingan, rata-rata P8 kami adalah 212,3 km, dekat dengan 213 km pada makalah. Perbaikan penalti C++ juga dapat berpengaruh, tetapi pengaruhnya belum diuji secara terpisah. Reproduksi ini menghasilkan biaya yang dekat dengan hasil penulis, dengan perbedaan kode tersebut sebagai batasannya.
+
+\subsection{Perbandingan ITS, GA, dan PSO}
+
+\begin{table*}[!t]
+\caption{Hasil 10 pengulangan pada data nyata P1--P8. Acuan adalah optimum Gurobi. Rata-rata biaya terendah dicetak tebal; SD menyatakan simpangan baku.}
+\label{tab:summary}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllr rrr rrr@{}}
+\toprule
+Instance & Acuan & Metode & Terbaik & Rata-rata & SD & Terburuk & \shortstack{Gap terbaik\\(\%)} & \shortstack{Gap rata-rata\\(\%)} & \shortstack{Waktu\\(s)}\\
+\midrule
+\tableinput tables/summary-real.tex
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[!t]
+\caption{Hasil 10 pengulangan pada C01--C06. Acuan adalah ITS terbaik pada makalah. Gap dihitung dengan \eqref{eq:gap}; rata-rata biaya terendah dicetak tebal.}
+\label{tab:summary-chao}
+\centering\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllr rrr rrr@{}}
+\toprule
+Instance & Acuan & Metode & Terbaik & Rata-rata & SD & Terburuk & \shortstack{Gap terbaik\\(\%)} & \shortstack{Gap rata-rata\\(\%)} & \shortstack{Waktu\\(s)}\\
+\midrule
+\tableinput tables/summary-chao.tex
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{gap_by_instance.pdf}
+\caption{Rata-rata gap setiap metode terhadap nilai acuan. Garis pada ujung batang menunjukkan simpangan baku. Gap negatif berarti biaya lebih rendah daripada acuan.}
+\label{fig:gap}
+\end{figure*}
+
+Tabel~\ref{tab:summary} dan~\ref{tab:summary-chao} memuat hasil tiap metode. Gambar~\ref{fig:gap} memperlihatkan rata-rata gap terhadap nilai acuan. Gap nol menunjukkan bahwa rata-rata biaya sama dengan acuan, sedangkan gap negatif menunjukkan biaya yang lebih rendah.
+
+Pada P1--P8, hasil keempat metode umumnya berdekatan. GA-OX dan GA-PMX mencapai optimum pada setiap pengulangan di tujuh instance, dengan simpangan baku nol. ITS kurang konsisten pada P2 dan P8, dengan rata-rata gap masing-masing 1,0\% dan 2,6\%. Pada P6, kedua varian GA dan PSO memperoleh biaya terbaik 225 km, sedangkan optimumnya 222 km. Solusi optimal dari ITS menempatkan VC di dalam \textit{sub-tour}: pada rute 0-5-4-2-8-7-3-2-1-0, truk melayani pelanggan 3 dari titik parkir di pelanggan 2. Decoder GA dan PSO selalu menempatkan VC pada \textit{main tour}, sehingga tidak dapat membentuk solusi tersebut.
+
+ITS memperoleh rata-rata biaya terendah pada keenam instance Chao, dengan gap antara $-0{,}1\%$ dan 3,8\%. Gap GA-OX berkisar 2,3--9,7\%, GA-PMX 5,4--8,4\%, dan PSO 21--41\%. Meskipun rata-ratanya lebih tinggi, GA-OX menemukan solusi C01 sebesar 628,86 dan C03 sebesar 749,23. Keduanya lebih rendah daripada acuan makalah (640,66 dan 764,81) serta ITS terbaik kami (633,61 dan 761,10), dan lolos pemeriksa kelayakan. Hasil GA lebih bervariasi, dengan simpangan baku sekitar 16--50 dibandingkan 6--28 pada ITS. Dengan demikian, solusi terbaik tunggal belum mencerminkan konsistensi tiap metode.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{routes_C01.pdf}
+\caption{Solusi terbaik ITS (kiri) dan GA-OX (kanan) pada C01. Garis biru adalah \textit{main tour} kendaraan bertrailer, garis oranye putus-putus adalah \textit{sub-tour} truk setelah trailer diparkir, dan garis ungu adalah rute truk murni.}
+\label{fig:routes}
+\end{figure*}
+
+Pada Gambar~\ref{fig:routes}, titik hitam menyatakan VC, lingkaran putih menyatakan TC, dan kotak menyatakan depot. TC dilayani melalui \textit{sub-tour} atau PTR sesuai batasan akses kendaraan. Solusi ITS memiliki \textit{sub-tour} yang lebih panjang dan dapat memuat VC. Solusi GA-OX memiliki \textit{sub-tour} yang hanya memuat TC karena batasan decoder. Total biaya kedua solusi adalah 633,61 dan 628,86, dengan selisih 4,75 atau sekitar 0,75\%.
+
+\subsection{Konvergensi}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{convergence.pdf}
+\caption{Rata-rata biaya solusi layak terbaik terhadap waktu pada 10 pengulangan. Garis horizontal titik-titik menunjukkan nilai acuan.}
+\label{fig:conv}
+\end{figure*}
+
+Gambar~\ref{fig:conv} menyajikan rata-rata biaya solusi layak terbaik terhadap waktu pada tiga instance Chao. Setiap titik merupakan rata-rata dari 10 pengulangan. Karena pencatatan menggunakan solusi terbaik yang telah ditemukan, kurva hanya menurun atau mendatar.
+
+GA menurunkan biaya dengan cepat pada beberapa detik pertama, kemudian hanya sedikit memperbaiki solusi. Pola ini sesuai dengan dugaan konvergensi dini, meskipun keragaman populasi tidak diukur langsung pada grafik. ITS berawal dari solusi CW dan terus memperbaiki biaya hingga mendekati akhir pengujian, terutama pada C04 dan C06. PSO memperbaiki biaya lebih lambat dan berakhir pada nilai yang lebih tinggi.
+
+\subsection{Uji statistik}
+
+\begin{table}[t]
+\caption{Nilai $p$ uji Wilcoxon \textit{rank-sum} dua sisi pada biaya akhir (10 pengulangan per metode). Perbandingan mencakup ITS dengan varian GA/PSO terbaik, OX dengan PMX, dan varian GA terbaik dengan PSO. Varian terpilih ditulis dalam kurung. Cetak tebal: $p<0{,}05$.}
+\label{tab:stats}
+\centering\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Instance & ITS vs GA/PSO & OX vs PMX & GA vs PSO\\
+\midrule
+\tableinput tables/stats.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tabel~\ref{tab:stats} menyajikan uji perbedaan distribusi biaya akhir. Nilai $p$ menyatakan peluang memperoleh perbedaan peringkat biaya setidaknya seekstrem hasil pengamatan jika distribusi biaya kedua metode sebenarnya sama. Perbedaan dinyatakan signifikan jika $p<\alpha_{\mathrm{uji}}$, dengan $\alpha_{\mathrm{uji}}=0{,}05$. Nilai $p$ tidak menyatakan besar keunggulan suatu metode; arah dan besar selisih tetap dibaca dari statistik biayanya. Hasilnya adalah sebagai berikut:
+\begin{itemize}
+\item ITS lebih baik secara signifikan daripada GA terbaik pada C02, C05, dan C06. Pada C01, C03, dan C04, selisihnya tidak signifikan ($p=0{,}50$; $0{,}60$; dan $0{,}07$). Pada P2 dan P8, GA justru lebih baik secara signifikan karena selalu menemukan optimum.
+\item OX dan PMX tidak berbeda signifikan di instance mana pun ($p\ge 0{,}07$). OX memiliki rata-rata lebih rendah pada C01--C04, dan PMX pada C05--C06.
+\item GA menghasilkan biaya lebih rendah secara signifikan daripada PSO pada keenam instance Chao, dengan nilai $p<0{,}001$.
+\end{itemize}
+
+\subsection{Sensitivitas parameter}\label{sec:sens}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{sensitivity.pdf}
+\caption{Pengaruh parameter terhadap rata-rata gap pada C01 (5 pengulangan per nilai, garis tegak menunjukkan simpangan baku). Kiri: peluang mutasi GA-OX. Kanan: inersia akhir PSO.}
+\label{fig:sens}
+\end{figure}
+
+\begin{table}[t]
+\caption{Analisis sensitivitas pada C01 (5 pengulangan per nilai, batas waktu sama dengan eksperimen utama). Parameter GA-OX adalah peluang mutasi, sedangkan parameter PSO adalah $w_{\text{end}}$.}
+\label{tab:sens}
+\centering\footnotesize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{llrrrr}
+\toprule
+Metode & Parameter & Rata-rata & SD & Terbaik & \shortstack{Gap rata-rata\\(\%)}\\
+\midrule
+\tableinput tables/sensitivity-compact.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+Gambar~\ref{fig:sens} dan Tabel~\ref{tab:sens} memperlihatkan hasil perubahan satu parameter dengan parameter lain tetap. Rata-rata gap yang lebih rendah menunjukkan biaya yang lebih dekat atau lebih rendah daripada acuan.
+
+Pada GA-OX, peluang mutasi 0,05 dan 0,1 menghasilkan rata-rata gap 3,3\% dan 4,9\%. Peluang 0,2 dan 0,4 menghasilkan rata-rata gap sekitar $-1{,}1\%$. Hasil ini menunjukkan bahwa mutasi yang lebih sering membantu pencarian pada C01 dan sesuai dengan dugaan konvergensi dini pada Gambar~\ref{fig:conv}. Peluang 0,2 memberikan rata-rata biaya 633,34 dengan simpangan baku 5,75. Peluang 0,4 memberikan rata-rata 633,78 dan simpangan baku 19,59, serta solusi terbaik tunggal 605,58. Solusi tersebut sekitar 5,5\% lebih pendek daripada acuan, tetapi variasi hasilnya lebih besar.
+
+Pada PSO, rata-rata gap meningkat dari 25,4\% pada $w_{\text{end}}=0{,}2$ menjadi 34,5\% pada $w_{\text{end}}=0{,}8$. Inersia akhir yang lebih kecil mengurangi pengaruh kecepatan sebelumnya pada tahap akhir pencarian. Namun, variasi antar-pengulangan masih cukup besar, dan seluruh pengaturan menghasilkan rata-rata gap di atas 25\%. Perubahan parameter ini belum membuat PSO mendekati hasil GA.
+
+Pengujian sensitivitas GA-OX pada mutasi 0,2 menggunakan pengaturan dan \textit{seed} yang sama dengan eksperimen utama. Empat dari lima \textit{seed} menghasilkan biaya akhir yang identik. Rata-rata untuk \textit{seed} 1--5 adalah 633,3 pada analisis sensitivitas dan 633,6 pada eksperimen utama. Rata-rata seluruh 10 \textit{seed} pada Tabel~\ref{tab:summary-chao} lebih tinggi, yaitu 655,3, karena hasil \textit{seed} 6--10 lebih buruk. Perbandingan ini juga menunjukkan pengaruh pemilihan pengulangan terhadap rata-rata yang dilaporkan.
+
+\section{Diskusi}\label{sec:diskusi}
+
+ITS bekerja langsung pada struktur rute. Operatornya dapat memindahkan VC ke \textit{sub-tour}, membentuk beberapa \textit{sub-tour} dari satu lokasi parkir, serta mengubah lokasi parkir trailer. Pada setiap langkah, ITS menilai gerakan di sekitar solusi dan memilih gerakan terbaik yang diizinkan. GA dan PSO mengubah urutan pelanggan, kemudian memakai decoder untuk membentuk rute. Decoder yang lebih terbatas mengurangi pilihan solusi yang dapat dicapai, terutama ketika jumlah pelanggan bertambah.
+
+Untuk satu urutan pelanggan, decoder mencari pembagian rute dengan biaya minimum dalam struktur rute yang diizinkannya. Dengan waktu evaluasi sekitar 0,1 ms, GA dapat mencoba 1,7--4,0 juta urutan per pengulangan. Pendekatan ini mencapai optimum pada tujuh instance kecil dan menghasilkan solusi terbaik yang lebih pendek daripada ITS pada C01 serta C03. Namun, perbaikan biaya melambat setelah tahap awal dan hasil antar-pengulangan bervariasi. Penambahan \textit{local search} dapat diuji untuk memperbaiki solusi setelah tahap tersebut.
+
+Pada representasi \textit{random key}, banyak posisi kontinu menghasilkan permutasi yang sama. Perubahan kecil pada posisi dapat tidak mengubah urutan pelanggan, sedangkan perubahan yang melintasi beberapa nilai kunci dapat mengubah urutan secara lebih luas. Karena itu, perpindahan menuju posisi terbaik dalam \eqref{eq:vel} belum tentu menghasilkan perbaikan rute. Hal ini dapat menjelaskan hasil PSO yang lebih lemah. Sebaliknya, operator OX pada GA mewariskan bagian urutan pelanggan secara langsung.
+
+OX mempertahankan urutan relatif pelanggan, sedangkan PMX lebih mempertahankan posisi gen. Karena decoder membagi permutasi menjadi segmen berurutan, OX dapat sesuai untuk representasi ini. Rata-rata OX lebih rendah pada empat dari enam instance Chao, tetapi uji statistik tidak menunjukkan perbedaan signifikan. Data yang tersedia belum cukup untuk menyatakan salah satu operator lebih unggul secara umum.
+
+Perbandingan ini memiliki beberapa keterbatasan:
+\begin{itemize}
+\item Anggaran waktu juga dipengaruhi kecepatan implementasi. ITS menggunakan R dan C++, sedangkan GA serta PSO menggunakan Python dengan Numba. Jumlah evaluasi per detik berbeda, sehingga hasil mencerminkan gabungan metode dan implementasinya.
+\item \textit{Decoder} hanya mengizinkan satu \textit{sub-tour} per MVR dan tidak menaruh VC di \textit{sub-tour}. Kasus P6 menunjukkan bahwa batasan ini dapat mencegah GA dan PSO mencapai optimum.
+\item Hanya 6 dari 21 instance Chao yang diuji, dengan 10 run per algoritma. Uji statistik tidak dikoreksi untuk perbandingan berganda.
+\item Parameter GA dan PSO belum disetel secara menyeluruh. Analisis sensitivitas hanya mencakup satu instance dengan 5 pengulangan per nilai parameter.
+\item Jumlah evaluasi bergantung pada beban komputer. Pada \textit{seed} yang sama, GA-OX di C01 menjalankan sekitar 1,84 juta evaluasi pada eksperimen utama dan 2,17 juta pada analisis sensitivitas. Karena itu, anggaran waktu tidak menjamin hasil identik pada setiap pengulangan.
+\item Aturan armada dan parkir trailer mengikuti kode serta hasil penulis sebagaimana dijelaskan pada Bagian~\ref{sec:armada}. Aturan tersebut tidak sepenuhnya sama dengan rumusan MILP. Batas waktu kerja pengemudi juga tidak dimodelkan.
+\end{itemize}
+
+\balance
+\section{Kesimpulan}
+
+Reproduksi heuristik Davila-Pena dkk.\ \cite{davila2023} menghasilkan biaya awal CW yang sesuai hingga pembulatan pada instance Chao. Setelah lima masalah teknis diperbaiki, selisih solusi ITS terbaik berkisar antara $-1{,}10\%$ dan $0{,}44\%$ terhadap hasil makalah. Dengan anggaran waktu yang setara, ITS memperoleh rata-rata biaya terendah pada keenam instance Chao, diikuti GA. Rata-rata gap PSO berbasis \textit{random key} masih 21--41\%. Pada data nyata, kedua varian GA selalu mencapai optimum di tujuh instance, sedangkan batasan decoder menghalangi pencapaian optimum P6. OX dan PMX tidak menunjukkan perbedaan signifikan.
+
+Aturan armada dan lokasi parkir trailer perlu dinyatakan dengan jelas karena model, kode, dan hasil makalah tidak sepenuhnya sesuai. Perbandingan berikutnya dapat memperluas decoder agar mendukung beberapa \textit{sub-tour} dan VC di dalamnya. Penambahan \textit{local search} pada GA juga dapat diuji untuk memperbaiki solusi setelah kemajuan awal melambat. Pengujian dengan implementasi yang lebih seragam dapat membantu menilai pengaruh kecepatan program terhadap hasil.
+
+\section*{Pernyataan Kontribusi}
+
+\textcolor{red}{\textit{[Belum diisi: pembagian kerja masing-masing anggota akan dilengkapi oleh kelompok.]}}
+
+\section*{Pernyataan Penggunaan LLM}
+
+Kami menggunakan model bahasa besar (\textit{large language model}, LLM) untuk membantu penulisan kode, penyusunan laporan, serta penyuntingan bahasa dan tata letak LaTeX. Penggunaannya mencakup:
+\begin{itemize}
+\item Pada reproduksi kode R dan C++ (Rcpp), LLM membantu menjelaskan struktur program, menyiapkan R di macOS, dan menelusuri galat. Perbaikan mencakup pustaka khusus Windows, operator logika, indeks fungsi penalti C++, serta dua kesalahan skrip pada Bagian~\ref{sec:metode}. Setiap perbaikan ditandai dengan \texttt{[fix]} dan diperiksa dengan menjalankan kembali P1 hingga memperoleh biaya 189 km.
+\textcolor{red}{\textit{[tambahkan jika masih ada lagi]}}
+\end{itemize}
+
+\begin{thebibliography}{00}
+\setlength{\itemsep}{0pt}
+\bibitem{davila2023} L. Davila-Pena, D. R. Penas, and B. Casas-M\'endez, ``A new two-phase heuristic for a problem of food distribution with compartmentalized trucks and trailers,'' \textit{Int. Trans. Oper. Res.}, vol. 30, no. 2, pp. 1031--1064, 2023, doi: 10.1111/itor.13071.
+\bibitem{chao2002} I.-M. Chao, ``A tabu search method for the truck and trailer routing problem,'' \textit{Comput. Oper. Res.}, vol. 29, no. 1, pp. 33--51, 2002, doi: 10.1016/S0305-0548(00)00056-3.
+\bibitem{ostermeier2021} M. Ostermeier, T. Henke, A. H\"ubner, and G. W\"ascher, ``Multi-compartment vehicle routing problems: State-of-the-art, modeling framework and future directions,'' \textit{Eur. J. Oper. Res.}, vol. 292, no. 3, pp. 799--817, 2021, doi: 10.1016/j.ejor.2020.11.009.
+\bibitem{scheuerer2006} S. Scheuerer, ``A tabu search heuristic for the truck and trailer routing problem,'' \textit{Comput. Oper. Res.}, vol. 33, no. 4, pp. 894--909, 2006, doi: 10.1016/j.cor.2004.08.002.
+\bibitem{lin2009} S.-W. Lin, V. F. Yu, and S.-Y. Chou, ``Solving the truck and trailer routing problem based on a simulated annealing heuristic,'' \textit{Comput. Oper. Res.}, vol. 36, no. 5, pp. 1683--1692, 2009, doi: 10.1016/j.cor.2008.04.005.
+\bibitem{caramia2010a} M. Caramia and F. Guerriero, ``A heuristic approach for the truck and trailer routing problem,'' \textit{J. Oper. Res. Soc.}, vol. 61, no. 7, pp. 1168--1180, 2010, doi: 10.1057/jors.2009.59.
+\bibitem{caramia2010b} M. Caramia and F. Guerriero, ``A milk collection problem with incompatibility constraints,'' \textit{Interfaces}, vol. 40, no. 2, pp. 130--143, 2010, doi: 10.1287/inte.1090.0475.
+\bibitem{derigs2013} U. Derigs, M. Pullmann, and U. Vogel, ``Truck and trailer routing problems, heuristics and computational experience,'' \textit{Comput. Oper. Res.}, vol. 40, no. 2, pp. 536--546, 2013, doi: 10.1016/j.cor.2012.08.007.
+\bibitem{elfallahi2008} A. El Fallahi, C. Prins, and R. Wolfler Calvo, ``A memetic algorithm and a tabu search for the multi-compartment vehicle routing problem,'' \textit{Comput. Oper. Res.}, vol. 35, no. 5, pp. 1725--1741, 2008, doi: 10.1016/j.cor.2006.10.006.
+\bibitem{silvestrin2017} P. V. Silvestrin and M. Ritt, ``An iterated tabu search for the multi-compartment vehicle routing problem,'' \textit{Comput. Oper. Res.}, vol. 81, pp. 192--202, 2017, doi: 10.1016/j.cor.2016.12.023.
+\bibitem{prins2004} C. Prins, ``A simple and effective evolutionary algorithm for the vehicle routing problem,'' \textit{Comput. Oper. Res.}, vol. 31, no. 12, pp. 1985--2002, 2004, doi: 10.1016/S0305-0548(03)00158-8.
+\bibitem{davis1985} L. Davis, ``Applying adaptive algorithms to epistatic domains,'' in \textit{Proc. 9th Int. Joint Conf. Artificial Intelligence (IJCAI-85)}, 1985, pp. 162--164.
+\bibitem{goldberg1985} D. E. Goldberg and R. Lingle, ``Alleles, loci, and the traveling salesman problem,'' in \textit{Proc. Int. Conf. Genetic Algorithms and Their Applications}, Pittsburgh, PA, 1985, pp. 154--159.
+\bibitem{kennedy1995} J. Kennedy and R. Eberhart, ``Particle swarm optimization,'' in \textit{Proc. ICNN'95 Int. Conf. Neural Networks}, vol. 4, 1995, pp. 1942--1948, doi: 10.1109/ICNN.1995.488968.
+\bibitem{shi1998} Y. Shi and R. Eberhart, ``A modified particle swarm optimizer,'' in \textit{Proc. IEEE Int. Conf. Evolutionary Computation}, 1998, pp. 69--73, doi: 10.1109/ICEC.1998.699146.
+\bibitem{bean1994} J. C. Bean, ``Genetic algorithms and random keys for sequencing and optimization,'' \textit{ORSA J. Comput.}, vol. 6, no. 2, pp. 154--160, 1994, doi: 10.1287/ijoc.6.2.154.
+\bibitem{wilcoxon1945} F. Wilcoxon, ``Individual comparisons by ranking methods,'' \textit{Biometrics Bull.}, vol. 1, no. 6, pp. 80--83, 1945, doi: 10.2307/3001968.
+\end{thebibliography}
+
+\end{document}

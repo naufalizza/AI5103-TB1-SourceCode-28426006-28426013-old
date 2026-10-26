@@ -121,7 +121,6 @@ def run_ga(decoder, seed, time_limit_s=None, max_evals=None, crossover="OX",
 
     n_child = pop_size - elite
     while not stopped:
-        # draw all random numbers of a generation at once so the seed fixes the run
         tour = rng.integers(0, pop_size, size=(n_child, 2, tournament_k))
         winners = np.take_along_axis(
             tour, costs[tour].argmin(axis=2)[..., None], axis=2)[..., 0]

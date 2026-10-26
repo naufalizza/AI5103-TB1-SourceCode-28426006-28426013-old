@@ -44,7 +44,7 @@ def run_pso(decoder, seed, time_limit_s=None, max_evals=None, swarm_size=50,
     gbest_x = X[0].copy()
     gbest_f = np.inf
     gbest_perm = None
-    feas_f = np.inf          # best feasible, kept apart from gbest
+    feas_f = np.inf
     feas_perm = None
     n_evals = 0
     iterations = 0
@@ -94,7 +94,7 @@ def run_pso(decoder, seed, time_limit_s=None, max_evals=None, swarm_size=50,
         iterations += 1
         trace()
 
-    # gbest is updated right after each particle (asynchronous PSO)
+    # gbest is updated right after each particle
     while done and not out_of_budget():
         for i in range(swarm_size):
             if out_of_budget():

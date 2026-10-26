@@ -22,7 +22,6 @@ RAW = ROOT / "results" / "raw"
 FIG = ROOT / "results" / "figures"
 ALGS = ["ITS", "GA-OX", "GA-PMX", "PSO"]
 
-# paper Tables 4-5: (CW cost, ITS cost, ITS time in s)
 PAPER = {
     "P1": (None, 189, 5.03), "P2": (None, 142, 3.88), "P3": (None, 106, 3.90),
     "P4": (None, 256, 5.58), "P5": (None, 109, 4.72), "P6": (None, 223, 6.48),
@@ -293,6 +292,12 @@ def write_tex_tables(summ, repro, stats, sens):
                          f"{_f(r.worst)} & {_f(r.gap_best)} & {_f(r.gap_mean)} & {_f(r.time_mean, 1)} \\\\")
         lines.append(r"\midrule")
     (TAB / "summary.tex").write_text("\n".join(lines[:-1]) + "\n")
+    # The report separates real cases and Chao cases into two tables.
+    blocks = "\n".join(lines[:-1]).split("\\midrule\n")
+    for name, prefix in [("summary-real.tex", "P"), ("summary-chao.tex", "C")]:
+        selected = [block for block in blocks if block.startswith(prefix)]
+        (TAB / name).write_text("\\midrule\n".join(selected) + "\n")
+
     lines = []
     for r in repro.itertuples():
         lines.append(f"{_tex_name(r.instance)} & {_f(r.paper_cw)} & {_f(r.ours_cw)} & {_f(r.paper_its)} & "
@@ -321,6 +326,12 @@ def write_tex_tables(summ, repro, stats, sens):
             lines.append(f"{r.algorithm} & {label} = {str(r.value).replace('.', ',')} & {_f(r.mean)} & "
                          f"{_f(r.std)} & {_f(r.min)} & {_f(r.gap_mean)} \\\\")
         (TAB / "sensitivity.tex").write_text("\n".join(lines) + "\n")
+        compact = []
+        for r in sens.sort_values(["algorithm", "value"]).itertuples():
+            compact.append(f"{r.algorithm} & {str(r.value).replace('.', ',')} & {_f(r.mean)} & "
+                           f"{_f(r.std)} & {_f(r.min)} & {_f(r.gap_mean)} " + r"\\")
+        (TAB / "sensitivity-compact.tex").write_text("\n".join(compact) + "\n")
+
 
 
 def _save(fig, name):
