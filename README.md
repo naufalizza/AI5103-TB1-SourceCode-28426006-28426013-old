@@ -7,7 +7,7 @@
 | NIM | Nama |
 | --- | --- |
 | 28426006 | Muhammad Faishal Dienul Haq |
-| 28426013 | Naufal Izza Fikry |
+| 28426013 | Muhammad Naufal Izza Fikry |
 
 Proyek ini membandingkan Iterated Tabu Search (ITS), Genetic Algorithm dengan Order Crossover (GA-OX), Genetic Algorithm dengan Partially Mapped Crossover (GA-PMX), dan Particle Swarm Optimization (PSO) untuk rute truk dan trailer berkompartemen. Tujuannya meminimalkan total jarak sambil memenuhi permintaan, kapasitas kompartemen, akses pelanggan, dan batas armada.
 
